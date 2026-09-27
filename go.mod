@@ -149,3 +149,5 @@ require (
 
 // for https://github.com/golang/protobuf/issues/1704
 replace google.golang.org/protobuf => github.com/metacubex/protobuf-go v0.0.0-20260306035419-7ceee0674686
+
+replace github.com/metacubex/utls => github.com/duckerapp/utls v1.9.0-alpha.1.0.20261111201950-8e51ef45f85d
