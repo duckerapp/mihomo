@@ -25,6 +25,8 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dlclark/regexp2 v1.12.0 h1:0j4c5qQmnC6XOWNjP3PIXURXN2gWx76rd3KvgdPkCz8=
 github.com/dlclark/regexp2 v1.12.0/go.mod h1:DHkYz0B9wPfa6wondMfaivmHpzrQ3v9q8cnmRbL6yW8=
+github.com/duckerapp/sing-mux v0.3.13-0.20261021181010-2cbb171e3018 h1:Ev4BMvkzRjpiSY3Uny1yEYmbnh0AgZv7+UaFTRytX24=
+github.com/duckerapp/sing-mux v0.3.13-0.20261021181010-2cbb171e3018/go.mod h1:8bT7ZKT3clRrJjYc/x5CRYibC1TX/bK73a3r3+2E+Fc=
 github.com/duckerapp/utls v0.0.0-20261021180458-f1a7cc0f78b2 h1:O7TnDAhJqSEDrkEfGpI3GH8mdYkwEt6kTLzeSbIXhmI=
 github.com/duckerapp/utls v0.0.0-20261021180458-f1a7cc0f78b2/go.mod h1:fCleWyTleu20o1ixVRIesy+fZjG14LmO7YwwSMPe560=
 github.com/dunglas/httpsfv v1.0.2 h1:iERDp/YAfnojSDJ7PW3dj1AReJz4MrwbECSSE59JWL0=
@@ -157,8 +159,6 @@ github.com/metacubex/sevenzip v1.6.4 h1:OIL+DeOeSAbKNsjqxcYUMiarRmX6Kaxakb0GT7E9
 github.com/metacubex/sevenzip v1.6.4/go.mod h1:FP3X9bzFKj9wPxifGN9B3w2fIEicMjzKYIGIhnu+1pw=
 github.com/metacubex/sing v0.5.8 h1:OwJDSPP+pza6Ywt7NMR4kEYq+UNrsIywSk/eAMlqxz8=
 github.com/metacubex/sing v0.5.8/go.mod h1:ypf0mjwlZm0sKdQSY+yQvmsbWa0hNPtkeqyRMGgoN+w=
-github.com/metacubex/sing-mux v0.3.12 h1:80jrJsGgRW7ZHpJCRpwJhG3yzT5muEHIWjaOsDJZ2wE=
-github.com/metacubex/sing-mux v0.3.12/go.mod h1:8bT7ZKT3clRrJjYc/x5CRYibC1TX/bK73a3r3+2E+Fc=
 github.com/metacubex/sing-quic v0.0.0-20260904234848-1c242664697a h1:qZzQwtWDrPU1LXoMow0/iLHY3mb7uauS/mho8hYcenE=
 github.com/metacubex/sing-quic v0.0.0-20260904234848-1c242664697a/go.mod h1:6ayFGfzzBE85csgQkM3gf4neFq6s0losHlPRSxY+nuk=
 github.com/metacubex/sing-shadowsocks v0.2.13 h1:PKmInHy9+4nY3FLhmKcWdASUBo9WZ/KrSPWjNpGaUTQ=
