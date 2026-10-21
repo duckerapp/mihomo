@@ -151,3 +151,5 @@ require (
 replace google.golang.org/protobuf => github.com/metacubex/protobuf-go v0.0.0-20260306035419-7ceee0674686
 
 replace github.com/metacubex/utls => github.com/duckerapp/utls v1.9.0-alpha.1.0.20261111210544-f1bdccab2217
+
+replace github.com/metacubex/sing-mux => github.com/duckerapp/sing-mux v0.3.13-0.20261021181010-2cbb171e3018
