@@ -612,7 +612,8 @@ func handleTCPConn(connCtx C.ConnContext) {
 	}
 	logMetadata(metadata, rule, remoteConn)
 
-	remoteConn = statistic.NewTCPTracker(remoteConn, statistic.DefaultManager, metadata, rule, int64(peekLen), 0, true)
+	tracker := statistic.NewTCPTracker(remoteConn, statistic.DefaultManager, metadata, rule, int64(peekLen), 0, true)
+	remoteConn = tracker
 	defer func(remoteConn C.Conn) {
 		_ = remoteConn.Close()
 	}(remoteConn)
@@ -622,6 +623,7 @@ func handleTCPConn(connCtx C.ConnContext) {
 	defer peekMutex.Unlock()
 	_ = conn.SetReadDeadline(time.Time{}) // reset
 	handleSocket(conn, remoteConn)
+	countAnswer(tracker.Info())
 }
 
 func logMetadataErr(metadata *C.Metadata, rule C.Rule, proxy C.ProxyAdapter, err error) {
