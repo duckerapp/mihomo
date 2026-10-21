@@ -2,6 +2,8 @@ package outbound
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	N "github.com/metacubex/mihomo/common/net"
 	"github.com/metacubex/mihomo/common/utils"
@@ -110,6 +112,7 @@ func NewSingMux(option SingMuxOption, proxy ProxyAdapter) (ProxyAdapter, error) 
 			SendBPS:    utils.StringToBps(option.BrutalOpts.Up),
 			ReceiveBPS: utils.StringToBps(option.BrutalOpts.Down),
 		},
+		OnStreamRefused: refusalReporter(proxy.Name()),
 	})
 	if err != nil {
 		return nil, err
@@ -120,4 +123,30 @@ func NewSingMux(option SingMuxOption, proxy ProxyAdapter) (ProxyAdapter, error) 
 		onlyTcp:      option.OnlyTcp,
 	}
 	return outbound, nil
+}
+
+// refusalReporter logs the streams a node refuses, mostly for sites it cannot reach: the refusal
+// itself ends inside the relay unlogged. A server that answers a stream before dialing it never
+// refuses, and its failed dials still leave no trace here. At most one warning a minute per node,
+// counting the refusals since the previous one, so that refusals for dead ad domains do not flood
+// the log.
+//
+// ponytail: refusals after the last warning of a burst wait for the next refusal to be counted;
+// a timer would report them if the tail of a burst ever matters.
+func refusalReporter(name string) func(message string) {
+	var (
+		access   sync.Mutex
+		refused  int
+		reported time.Time
+	)
+	return func(message string) {
+		access.Lock()
+		defer access.Unlock()
+		refused++
+		if time.Since(reported) < time.Minute {
+			return
+		}
+		log.Warnln("[Mux] %s refused %d stream(s), the last: %s", name, refused, message)
+		refused, reported = 0, time.Now()
+	}
 }
