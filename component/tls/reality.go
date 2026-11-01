@@ -79,6 +79,9 @@ func GetRealityConn(ctx context.Context, conn net.Conn, fingerprint UClientHello
 		if err != nil {
 			return nil, err
 		}
+		if err := DropRandomizedP256KeyShare(uConn); err != nil {
+			return nil, err
+		}
 
 		legacy := realityConfig.legacyHello.Load()
 		switchable := helloHasX25519MLKEM768(uConn)
