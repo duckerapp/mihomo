@@ -142,9 +142,8 @@ func assertClientHelloShape(t *testing.T, baseline, hello *utls.PubClientHelloMs
 	assertCurveShape(t, "supported curves", baseline.SupportedCurves, hello.SupportedCurves)
 	assertKeyShareShape(t, baseline.KeyShares, hello.KeyShares)
 	assertUint16Shape(t, "supported versions", baseline.SupportedVersions, hello.SupportedVersions)
-	if !reflect.DeepEqual(baseline.SupportedSignatureAlgorithms, hello.SupportedSignatureAlgorithms) {
-		t.Fatalf("signature algorithms changed:\nwant %v\n got %v", baseline.SupportedSignatureAlgorithms, hello.SupportedSignatureAlgorithms)
-	}
+	// Chrome 155 puts a GREASE value into signature_algorithms, new for each connection.
+	assertUint16Shape(t, "signature algorithms", uint16s(baseline.SupportedSignatureAlgorithms), uint16s(hello.SupportedSignatureAlgorithms))
 	if !reflect.DeepEqual(baseline.AlpnProtocols, hello.AlpnProtocols) {
 		t.Fatalf("ALPN changed:\nwant %v\n got %v", baseline.AlpnProtocols, hello.AlpnProtocols)
 	}
@@ -306,6 +305,14 @@ func assertKeyShareShape(t *testing.T, want, got []utls.KeyShare) {
 		g[i] = uint16(got[i].Group)
 	}
 	assertUint16Shape(t, "key share groups", w, g)
+}
+
+func uint16s[T ~uint16](values []T) []uint16 {
+	result := make([]uint16, len(values))
+	for i, value := range values {
+		result[i] = uint16(value)
+	}
+	return result
 }
 
 func normalizeGREASE(values []uint16) []uint16 {
