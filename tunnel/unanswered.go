@@ -1,6 +1,7 @@
 package tunnel
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -9,8 +10,9 @@ import (
 	"github.com/metacubex/mihomo/tunnel/statistic"
 )
 
-// answers counts, per node, the TCP connections that sent something and got nothing back, out of
-// all its TCP connections. A node that answers a mux stream before dialing it, as Xray's does,
+// answers counts, per node and network, the connections that sent something and got nothing back, out of
+// all its connections of that network. A UDP session is counted when it ends, after udpTimeout of silence; some UDP
+// goes unanswered by design (call and QUIC probes), so the share tells, not the line alone (D-529). A node that answers a mux stream before dialing it, as Xray's does,
 // closes the stream with no byte back when it cannot reach the site, and nothing else logs that.
 // At most one warning a minute per node, so that dead ad domains do not flood the log; the total
 // tells a dead node from them.
@@ -34,13 +36,14 @@ func countAnswer(info *statistic.TrackerInfo) {
 		return
 	}
 	unanswered := info.UploadTotal.Load() > 0 && info.DownloadTotal.Load() == 0
+	network := strings.ToUpper(info.Metadata.NetWork.String())
 
 	answers.Lock()
 	defer answers.Unlock()
-	n := answers.nodes[node]
+	n := answers.nodes[network+" "+node]
 	if n == nil {
 		n = &nodeAnswers{}
-		answers.nodes[node] = n
+		answers.nodes[network+" "+node] = n
 	}
 	n.closed++
 	if !unanswered {
@@ -50,7 +53,7 @@ func countAnswer(info *statistic.TrackerInfo) {
 	if time.Since(n.reported) < time.Minute {
 		return
 	}
-	log.Warnln("[TCP] %s: no answer on %d of %d connection(s), the last to %s", node, n.unanswered, n.closed, info.Metadata.RemoteAddress())
+	log.Warnln("[%s] %s: no answer on %d of %d connection(s), the last to %s", network, node, n.unanswered, n.closed, info.Metadata.RemoteAddress())
 	n.closed, n.unanswered, n.reported = 0, 0, time.Now()
 }
 

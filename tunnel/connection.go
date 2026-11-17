@@ -11,6 +11,7 @@ import (
 	N "github.com/metacubex/mihomo/common/net"
 	C "github.com/metacubex/mihomo/constant"
 	"github.com/metacubex/mihomo/log"
+	"github.com/metacubex/mihomo/tunnel/statistic"
 )
 
 type packetSender struct {
@@ -171,6 +172,9 @@ func handleUDPToLocal(writeBack C.WriteBack, pc C.PacketConn, sender C.PacketSen
 		_ = pc.Close()
 		closeAllLocalCoon(key)
 		natTable.Delete(key)
+		if tracker, ok := pc.(interface{ Info() *statistic.TrackerInfo }); ok {
+			countAnswer(tracker.Info())
+		}
 	}()
 
 	for {
