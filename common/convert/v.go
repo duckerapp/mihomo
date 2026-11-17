@@ -39,6 +39,11 @@ func handleVShareLink(names map[string]int, url *url.URL, scheme string, proxy m
 		if pcs := query.Get("pcs"); pcs != "" {
 			proxy["fingerprint"] = pcs
 		}
+		// vcn: Xray's verifyPeerCertByName, the name the certificate is checked
+		// against instead of the SNI.
+		if vcn := query.Get("vcn"); vcn != "" {
+			proxy["name-cert-verify"] = vcn
+		}
 	}
 	if sni := query.Get("sni"); sni != "" {
 		proxy["servername"] = sni
@@ -47,6 +52,10 @@ func handleVShareLink(names map[string]int, url *url.URL, scheme string, proxy m
 		realityOpts := map[string]any{
 			"public-key": realityPublicKey,
 			"short-id":   query.Get("sid"),
+		}
+		// pqv: the ML-DSA-65 key that verifies the REALITY server.
+		if pqv := query.Get("pqv"); pqv != "" {
+			realityOpts["mldsa65-verify"] = pqv
 		}
 		if value := query.Get("support-x25519mlkem768"); value != "" {
 			if enabled, err := strconv.ParseBool(value); err == nil {

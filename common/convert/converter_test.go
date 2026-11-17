@@ -428,3 +428,38 @@ func TestConvertsV2RayTrojanHTTPUpgrade(t *testing.T) {
 	_, err = adapter.ParseProxy(proxies[0])
 	assert.NoError(t, err)
 }
+
+// pqv and vcn of an Xray share link become mldsa65-verify and name-cert-verify.
+func TestConvertsV2RayPqvAndVcn(t *testing.T) {
+	pqv := base64.RawURLEncoding.EncodeToString(make([]byte, 1952))
+	for _, scheme := range []string{"vless", "vmess"} {
+		uri := scheme + "://b831381d-6324-4d53-ad4f-8cda48b30811@example.com:443?security=reality&type=tcp" +
+			"&sid=00112233&pbk=ppQ9FwLrLIa0AOrp1WvcyiaQ37vg2WSy_CD4bIdiTUw&pqv=" + pqv + "&vcn=cert.example.org"
+		proxies, err := ConvertsV2Ray([]byte(uri))
+		if !assert.NoError(t, err) || !assert.Len(t, proxies, 1) {
+			continue
+		}
+		assert.Equal(t, pqv, proxies[0]["reality-opts"].(map[string]any)["mldsa65-verify"], scheme)
+		assert.Equal(t, "cert.example.org", proxies[0]["name-cert-verify"], scheme)
+		_, err = adapter.ParseProxy(proxies[0])
+		assert.NoError(t, err, scheme)
+	}
+}
+
+// A subscription in URL-safe base64, or with a byte order mark and surrounding whitespace, still decodes.
+func TestConvertsV2RaySubscriptionEncodings(t *testing.T) {
+	// "~~~" in the names makes the URL-safe encoding differ from the standard one ("fn5+" against "fn5-").
+	links := "trojan://pw@example.com:443?sni=example.com#a~~~\ntrojan://pw@example.org:443?sni=example.org#b~~~"
+	for name, input := range map[string]string{
+		"url-safe":     base64.URLEncoding.EncodeToString([]byte(links)),
+		"raw url-safe": base64.RawURLEncoding.EncodeToString([]byte(links)),
+		"bom":          "\xef\xbb\xbf" + base64.StdEncoding.EncodeToString([]byte(links)),
+		"whitespace":   "\r\n " + base64.StdEncoding.EncodeToString([]byte(links)) + " \r\n",
+		"plain":        links,
+	} {
+		proxies, err := ConvertsV2Ray([]byte(input))
+		if assert.NoError(t, err, name) {
+			assert.Len(t, proxies, 2, name)
+		}
+	}
+}
