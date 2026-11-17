@@ -3,6 +3,7 @@ package adapter
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -36,6 +37,8 @@ type Proxy struct {
 	alive   atomic.Bool
 	history *queue.Queue[C.DelayHistory]
 	extra   xsync.Map[string, *internalProxyState]
+	// silent is what the log last said of the node's checks; zero is answering, as alive starts true.
+	silent atomic.Bool
 }
 
 // Adapter implements C.Proxy
@@ -174,6 +177,7 @@ func (p *Proxy) URLTest(ctx context.Context, url string, expectedStatus utils.In
 		}
 
 		p.alive.Store(alive)
+		p.logCheck(alive, t, err)
 		p.history.Put(record)
 		if p.history.Len() > defaultHistoriesNum {
 			p.history.Pop()
@@ -281,6 +285,19 @@ func (p *Proxy) URLTest(ctx context.Context, url string, expectedStatus utils.In
 		t = 1
 	}
 	return
+}
+
+// logCheck logs a node's check only when its answer changes: which node stopped answering and when is otherwise
+// nowhere in the log (a group says only that it failed). A check cut short by its caller says nothing of the node.
+func (p *Proxy) logCheck(alive bool, delay uint16, err error) {
+	if errors.Is(err, context.Canceled) || p.silent.Swap(!alive) == !alive {
+		return
+	}
+	if alive {
+		log.Infoln("[Check] %s answers again, %d ms", p.Name(), delay)
+	} else {
+		log.Warnln("[Check] %s stopped answering: %v", p.Name(), err)
+	}
 }
 
 func NewProxy(adapter C.ProxyAdapter) *Proxy {
