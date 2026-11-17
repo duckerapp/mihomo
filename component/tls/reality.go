@@ -35,10 +35,12 @@ const (
 
 	// The REALITY protocol uses Xray-style release bytes as a compatibility
 	// gate. These bytes represent Mihomo's tested REALITY compatibility, not
-	// Mihomo's application version.
+	// Mihomo's application version. 26.11.10 is the newest release among Xray
+	// (26.11.9) and the Jolymmiles fork (v26.11.10-1249), so a server of either
+	// that sets minClientVer to keep old clients out still lets us in.
 	realityClientVersionMajor byte = 26
-	realityClientVersionMinor byte = 7
-	realityClientVersionPatch byte = 11
+	realityClientVersionMinor byte = 11
+	realityClientVersionPatch byte = 10
 )
 
 type RealityConfig struct {

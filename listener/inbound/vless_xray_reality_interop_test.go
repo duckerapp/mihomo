@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -182,6 +183,75 @@ func xrayRealityClientConfig(t *testing.T, listenPort, serverPort int, targetAdd
 	data, err := json.MarshalIndent(config, "", "  ")
 	require.NoError(t, err)
 	return append(data, '\n')
+}
+
+// Our client reports REALITY version 26.11.10, the Jolymmiles fork's (Xray's own newest is 26.11.9): a
+// server that keeps older clients out with minClientVer up to it, or newer ones with maxClientVer from
+// it, lets us in; minClientVer 26.11.11 and maxClientVer 26.11.9 show the gate is really applied.
+func TestVLESSRealityXrayServerClientVersion(t *testing.T) {
+	xrayBinary := os.Getenv("XRAY_BINARY")
+	if xrayBinary == "" {
+		t.Skip("XRAY_BINARY is not set; point it at a current Xray-core executable")
+	}
+	origin := startTLSMirrorInteropCarrierTLS(t, padRealityCarrierCertificate)
+	echoAddr := startVMessInteropEcho(t)
+	privateKey, err := ecdh.X25519().GenerateKey(rand.Reader)
+	require.NoError(t, err)
+	mldsa65Seed := make([]byte, 32)
+	mldsa65Seed[0] = 3
+
+	for _, testCase := range []struct {
+		key, version string
+		accepted     bool
+	}{
+		{"minClientVer", "26.11.10", true},
+		{"maxClientVer", "26.11.10", true},
+		{"minClientVer", "26.11.11", false},
+		{"maxClientVer", "26.11.9", false},
+	} {
+		t.Run(testCase.key+" "+testCase.version, func(t *testing.T) {
+			xrayPort := vmessInteropReserveTCPPort(t)
+			var config map[string]any
+			require.NoError(t, json.Unmarshal(xrayRealityServerConfig(t, xrayPort.Port(), origin.addr, privateKey, mldsa65Seed), &config))
+			inbound := config["inbounds"].([]any)[0].(map[string]any)
+			reality := inbound["streamSettings"].(map[string]any)["realitySettings"].(map[string]any)
+			reality[testCase.key] = testCase.version
+			data, err := json.Marshal(config)
+			require.NoError(t, err)
+			startXrayRealityServer(t, xrayBinary, data, xrayPort)
+
+			out, err := outbound.NewVless(outbound.VlessOption{
+				Name:              "vless_reality_xray_version",
+				Server:            "127.0.0.1",
+				Port:              xrayPort.Port(),
+				UUID:              xrayRealityPlainUUID,
+				TLS:               true,
+				ServerName:        "localhost",
+				ClientFingerprint: "chrome",
+				RealityOpts: outbound.RealityOptions{
+					PublicKey: base64.RawURLEncoding.EncodeToString(privateKey.PublicKey().Bytes()),
+					ShortID:   xrayRealityShortID,
+				},
+			})
+			require.NoError(t, err)
+			t.Cleanup(func() { _ = out.Close() })
+			dial := func() (net.Conn, error) {
+				return out.DialContext(context.Background(), vmessInteropMetadata(t, echoAddr))
+			}
+			if testCase.accepted {
+				vmessInteropRoundTripWithRetry(t, dial, 128*1024)
+				return
+			}
+			conn, err := dial()
+			if err == nil {
+				_ = conn.Close()
+				t.Fatal("the Xray REALITY server authenticated our client")
+			}
+			if message := err.Error(); !strings.Contains(message, "REALITY authentication failed") && !strings.Contains(message, "x509:") {
+				t.Fatalf("dial error = %v, want one from a client the server forwarded to the target", err)
+			}
+		})
+	}
 }
 
 func xrayRealityServerConfig(t *testing.T, port int, originAddr string, privateKey *ecdh.PrivateKey, mldsa65Seed []byte) []byte {
