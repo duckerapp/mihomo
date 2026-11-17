@@ -21,7 +21,6 @@ type overrideSchema struct {
 	RoutingMark    *int    `provider:"routing-mark,omitempty"`
 	IPVersion      *string `provider:"ip-version,omitempty"`
 	Udp443         *string `provider:"udp-443,omitempty"`
-	Quic           *string `provider:"quic,omitempty"` // alias of udp-443
 
 	AdditionalPrefix *string                   `provider:"additional-prefix,omitempty"`
 	AdditionalSuffix *string                   `provider:"additional-suffix,omitempty"`
@@ -77,9 +76,6 @@ func (o *overrideSchema) Apply(mapping map[string]any) error {
 	}
 	if o.Udp443 != nil {
 		mapping["udp-443"] = *o.Udp443
-	}
-	if o.Quic != nil {
-		mapping["quic"] = *o.Quic
 	}
 
 	for _, expr := range o.ProxyName {

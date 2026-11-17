@@ -198,7 +198,6 @@ type BasicOption struct {
 	IPVersion   C.DNSPrefer `proxy:"ip-version,omitempty"`
 	DialerProxy string      `proxy:"dialer-proxy,omitempty"` // don't apply this option into groups, but can set a group name in a proxy
 	Udp443      string      `proxy:"udp-443,omitempty"`      // "allow" (default) or "reject": send UDP port 443 (QUIC) traffic into REJECT
-	Quic        string      `proxy:"quic,omitempty"`         // alias of udp-443
 
 	//
 	// The following parameters are used internally, assign value by the structure decoder are disallowed

@@ -41,14 +41,10 @@ func TestParseProxyUdp443DefaultAllow(t *testing.T) {
 	}
 }
 
-// udp-443: reject and its `quic` alias send UDP 443 into REJECT and leave
-// other ports alone.
+// udp-443: reject sends UDP 443 into REJECT and leaves other ports alone.
 func TestParseProxyUdp443Reject(t *testing.T) {
 	for _, mapping := range []map[string]any{
 		{"name": "d", "type": "direct", "udp-443": "reject"},
-		{"name": "d", "type": "direct", "quic": "reject"},
-		// the `quic` alias agrees with udp-443
-		{"name": "d", "type": "direct", "udp-443": "reject", "quic": "reject"},
 		// the structure decoder replaces "_" with "-" in keys
 		{"name": "d", "type": "direct", "udp_443": "reject"},
 	} {
@@ -74,19 +70,27 @@ func TestParseProxyUdp443Reject(t *testing.T) {
 	}
 }
 
-// quic: allow explicitly keeps the default behavior.
+// udp-443: allow explicitly keeps the default behavior.
 func TestParseProxyUdp443ExplicitAllow(t *testing.T) {
-	for _, key := range []string{"udp-443", "quic"} {
-		proxy, err := ParseProxy(map[string]any{"name": "d", "type": "direct", key: "allow"})
-		if err != nil {
-			t.Fatal(err)
-		}
-		chain, err := dialTestUDP(t, proxy, 443)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if strings.Contains(chain, "REJECT") {
-			t.Fatalf("%s: allow must route through the outbound, chain: %s", key, chain)
+	proxy, err := ParseProxy(map[string]any{"name": "d", "type": "direct", "udp-443": "allow"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	chain, err := dialTestUDP(t, proxy, 443)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(chain, "REJECT") {
+		t.Fatalf("allow must route through the outbound, chain: %s", chain)
+	}
+}
+
+// TrustTunnel has a boolean quic option of its own; udp-443 takes no alias that would clash with it.
+func TestParseProxyUdp443KeepsTrustTunnelQuic(t *testing.T) {
+	for _, quic := range []bool{true, false} {
+		if _, err := ParseProxy(map[string]any{"name": "tt", "type": "trusttunnel", "server": "1.2.3.4",
+			"port": 443, "username": "u", "password": "p", "quic": quic}); err != nil {
+			t.Fatalf("trusttunnel with quic: %v: %v", quic, err)
 		}
 	}
 }
@@ -94,10 +98,6 @@ func TestParseProxyUdp443ExplicitAllow(t *testing.T) {
 func TestParseProxyUdp443Invalid(t *testing.T) {
 	for _, mapping := range []map[string]any{
 		{"name": "d", "type": "direct", "udp-443": "drop"},
-		{"name": "d", "type": "direct", "quic": "drop"},
-		// conflicting alias values
-		{"name": "d", "type": "direct", "udp-443": "reject", "quic": "allow"},
-		{"name": "d", "type": "direct", "udp-443": "allow", "quic": "reject"},
 	} {
 		if _, err := ParseProxy(mapping); err == nil {
 			t.Fatalf("invalid option must be rejected: %v", mapping)
